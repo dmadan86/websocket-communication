@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      video, canvas {
+        margin-top: 10px;
+        width: 320px;
+        height: 160px;
+        border: 1px solid black;
+      }
+    </style>
+	<script src="dist/socket.io.js"></script>
+	<script src="lib/resemble.js"></script>
+	<script src="lib/lz-string-1.3.3.js"></script>
+	<script src="lib/base64-string-v1.1.0.js"></script>
+	</head>
+	<body>
+		<canvas id="canvas-redraw-fancy" style="width: 320px;height: 160px;"></canvas>   
+		<script>
+			var canvas_redraw = document.querySelector('#canvas-redraw-fancy');
+			var ctx_redraw = canvas_redraw.getContext('2d');  
+			canvas_redraw.width = "320";
+			canvas_redraw.height = "160";
+			ctx_redraw.scale(2,2);			
+			var socket = io.connect('http://localhost:85');		
+			socket.on('connect', function() {
+				socket.emit('subscribe', "testRoom");   
+			});
+			socket.on('imgdata', function(data) {
+				var img = new Image();
+				img.onload = function(){
+					ctx_redraw.drawImage(img, 0, 0, 320, 160 );
+					img = null;
+				};
+				var t = LZString.decompressFromUTF16(data.img);
+				img.src = t;				
+			});
+			
+		</script>
+	</body>
+</html>

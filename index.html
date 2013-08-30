@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      video, canvas {
+        margin-top: 10px;
+        width: 320px;
+        height: 160px;
+        border: 1px solid black;
+      }
+    </style>
+	<script src="dist/socket.io.js"></script>
+	<script src="lib/resemble.js"></script>
+	<script src="lib/lz-string-1.3.3.js"></script>
+	<script src="lib/base64-string-v1.1.0.js"></script>
+	
+	</head>
+	<body>
+		<video poster="images/star.png" id="video-canvas-fancy" controls="false" style="width: 320px;height: 160px;">
+			<source src="videos/Chrome_ImF.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"' />
+			<source src="videos/Chrome_ImF.webm" type='video/webm; codecs="vp8, vorbis"' />      
+		</video>
+		<canvas id="canvas-copy-fancy"></canvas>
+		<script>
+			var socket = io.connect('http://localhost:85');	
+			var video_dom = document.querySelector('#video-canvas-fancy');
+			var canvas_copy = document.querySelector('#canvas-copy-fancy');
+			var draw_interval = null;
+			var ctx_copy = null;   
+			var interval = null;
+			var canvas = document.createElement("canvas");
+			var ctx = canvas.getContext("2d");
+			
+			socket.on('connect', function() {
+				// Connected, let's sign-up for to receive messages for this room
+				socket.emit('subscribe', "testRoom");   
+			});
+
+			video_dom.addEventListener('canplay', function() {
+				canvas_copy.width = "320";
+				canvas_copy.height = "160";
+				ctx.width = "160";
+				ctx.height = "80";
+				ctx_copy = canvas_copy.getContext('2d');
+			}, false);
+
+			video_dom.addEventListener('play', function() {
+				processEffectFrame();
+				if (interval == null) {
+				  interval = window.setInterval(function() { processEffectFrame() }, 33);
+				}        
+			}, false);
+
+			function processEffectFrame() {
+				ctx_copy.drawImage(video_dom, 0 ,0, 320, 160);
+				ctx.drawImage(video_dom, 0, 0, 160, 80);
+				var data =  canvas.toDataURL();
+				var data1 = LZString.compressToUTF16(data);
+				//console.log(data.length + " " + data1.length);
+				socket.emit("broadcast", {img:data1});  
+				   
+			};
+
+			video_dom.addEventListener('pause', function() {
+				window.clearInterval(interval);
+				interval = null;
+			}, false);
+
+			video_dom.addEventListener('ended', function() {
+				clearInterval(interval);
+			}, false);		
+	</script>
+	</body>
+</html>
